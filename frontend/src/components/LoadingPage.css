@@ -1,0 +1,120 @@
+:root {
+  --loading-bg-start: #1a1a2e; /* 어두운 남색 */
+  --loading-bg-end: #16213e;   /* 살짝 다른 어두운 파랑 */
+  --loading-primary-color: #00e0ff; /* 밝은 청록색/사이언 */
+  --loading-secondary-color: #c471ed; /* 밝은 보라색 */
+  --loading-text-color: #e0e0e0;
+}
+
+.loading-page-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--loading-bg-start), var(--loading-bg-end));
+  color: var(--loading-text-color);
+  font-family: 'Pretendard', sans-serif;
+  overflow: hidden;
+  position: fixed; /* 다른 페이지 위에 전체 화면으로 표시 */
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 9999; /* 최상단에 위치 */
+}
+
+.loading-animation {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  margin-bottom: 40px;
+  /* Dribbble 샷의 추상적인 데이터 흐름을 단순화하여 표현 */
+}
+
+/* 애니메이션 요소 - 점 */
+.loading-dot {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background-color: var(--loading-primary-color);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--loading-primary-color), 0 0 20px var(--loading-primary-color);
+  opacity: 0;
+  animation: pulseDot 2s infinite ease-in-out, fadeInOut 2s infinite ease-in-out;
+}
+
+.loading-dot.dot1 { top: 10%; left: 45%; animation-delay: 0s; }
+.loading-dot.dot2 { top: 45%; left: 10%; animation-delay: 0.2s; }
+.loading-dot.dot3 { top: 45%; left: 80%; animation-delay: 0.4s; }
+
+/* 애니메이션 요소 - 선 (점으로 대체하거나 더 복잡한 SVG/Canvas 사용 가능) */
+.loading-line {
+  position: absolute;
+  height: 2px;
+  background-color: var(--loading-secondary-color);
+  box-shadow: 0 0 8px var(--loading-secondary-color);
+  transform-origin: left center;
+  opacity: 0;
+  animation: growLine 2.5s infinite ease-in-out, fadeInOutLine 2.5s infinite ease-in-out;
+}
+
+.loading-line.line1 {
+  width: 60px;
+  top: 25%;
+  left: 30%;
+  transform: rotate(30deg);
+  animation-delay: 0.1s;
+}
+.loading-line.line2 {
+  width: 80px;
+  top: 50%;
+  left: 20%;
+  transform: rotate(-15deg);
+  animation-delay: 0.3s;
+}
+.loading-line.line3 {
+  width: 70px;
+  top: 70%;
+  left: 40%;
+  transform: rotate(70deg);
+  animation-delay: 0.5s;
+}
+
+@keyframes pulseDot {
+  0%, 100% { transform: scale(0.8); }
+  50% { transform: scale(1.2); }
+}
+
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+@keyframes growLine {
+  0% { transform: scaleX(0) rotate(var(--rotate-angle, 0deg)); opacity: 0; }
+  50% { transform: scaleX(1) rotate(var(--rotate-angle, 0deg)); opacity: 0.8; }
+  100% { transform: scaleX(0) rotate(var(--rotate-angle, 0deg)); opacity: 0; }
+}
+
+@keyframes fadeInOutLine {
+  0%, 100% { opacity: 0; }
+  25%, 75% { opacity: 0.8; }
+}
+
+
+.loading-message {
+  font-size: 1.4em;
+  font-weight: 500;
+  margin-bottom: 10px;
+  text-align: center;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
+}
+
+.loading-subtext {
+  font-size: 0.9em;
+  font-weight: 300;
+  color: var(--loading-secondary-color);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+} 

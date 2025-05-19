@@ -1,0 +1,362 @@
+:root {
+  font-family: 'Pretendard', Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  color: var(--main-text-color);
+  background-color: var(--main-bg-start);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  --main-bg-start: #1a1a2e;
+  --main-bg-end: #16213e;
+  --main-primary-color: #00e0ff;
+  --main-secondary-color: #c471ed;
+  --main-secondary-color-rgb: 196, 113, 237;
+  --main-text-color: #e0e0e0;
+  --main-text-light-color: #f0f0f0;
+  --main-text-dark-color: #a0a0a0;
+  --container-bg-color: rgba(255, 255, 255, 0.05);
+  --container-border-color: rgba(var(--main-primary-color-rgb, 0, 224, 255), 0.3);
+  --main-primary-color-rgb: 0, 224, 255;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--main-bg-start), var(--main-bg-end));
+  color: var(--main-text-color);
+}
+
+#root {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.App {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.App-header {
+  padding: 2rem 0;
+  border-bottom: 1px solid var(--container-border-color);
+  margin-bottom: 2rem;
+}
+
+.App-header h1 {
+  color: var(--main-primary-color);
+  font-size: 2.5em;
+  font-weight: 600;
+  text-shadow: 0 0 10px rgba(var(--main-primary-color-rgb), 0.5);
+}
+
+main {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+h1, h2, h3 {
+  color: var(--main-text-light-color);
+  margin-bottom: 1rem;
+}
+
+h2 {
+  font-size: 1.8em;
+  color: var(--main-secondary-color);
+}
+
+h3 {
+  font-size: 1.4em;
+}
+
+p {
+  color: var(--main-text-color);
+  line-height: 1.7;
+  margin-bottom: 1rem;
+}
+
+button, .button-style {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.8em 1.5em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: var(--main-primary-color);
+  color: var(--main-bg-start);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(var(--main-primary-color-rgb), 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+button:hover, .button-style:hover {
+  background-color: var(--main-secondary-color);
+  color: var(--main-text-light-color);
+  border-color: var(--main-secondary-color);
+  box-shadow: 0 6px 20px rgba(var(--main-secondary-color-rgb, 196, 113, 237), 0.4);
+}
+
+button:focus,
+button:focus-visible,
+.button-style:focus,
+.button-style:focus-visible {
+  outline: 4px auto var(--main-primary-color);
+}
+
+button:disabled,
+.button-style:disabled {
+  background-color: rgba(var(--main-primary-color-rgb), 0.4);
+  color: rgba(0,0,0, 0.4);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.excel-uploader-container,
+.results-section,
+.error-section {
+  background-color: var(--container-bg-color);
+  padding: 2rem;
+  border-radius: 12px;
+  border: 1px solid var(--container-border-color);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  width: 100%;
+  max-width: 800px;
+  margin: 2rem auto;
+  text-align: left;
+}
+
+.error-section h2 {
+  color: #ff6b6b;
+}
+
+.results-section h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.chart-container {
+  background-color: rgba(0,0,0,0.2);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  border: 1px solid rgba(var(--main-secondary-color-rgb, 196, 113, 237), 0.3);
+}
+
+.chart-container h3 {
+  color: var(--main-primary-color);
+  margin-bottom: 1rem;
+}
+
+.gemini-recommendation {
+  background-color: rgba(var(--main-primary-color-rgb), 0.1);
+  border-left: 4px solid var(--main-primary-color);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  font-size: 0.95em;
+}
+
+.gemini-recommendation strong {
+  color: var(--main-primary-color);
+}
+
+.gemini-recommendation em {
+  color: var(--main-secondary-color);
+  font-style: normal;
+}
+
+.chart-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin: 1rem auto;
+  border: 1px solid var(--container-border-color);
+}
+
+.no-chart-data {
+  color: var(--main-text-dark-color);
+  text-align: center;
+  padding: 2rem;
+  font-style: italic;
+}
+
+.data-summary {
+  margin-top: 1rem;
+  font-size: 0.9em;
+}
+.data-summary p {
+  margin-bottom: 0.5rem;
+  color: var(--main-text-dark-color);
+}
+.data-summary strong {
+  color: var(--main-text-color);
+}
+
+.reset-button {
+  display: block;
+  margin: 2rem auto 0;
+  background-color: var(--main-secondary-color);
+  color: var(--main-text-light-color);
+}
+
+.reset-button:hover {
+  background-color: var(--main-primary-color);
+  color: var(--main-bg-start);
+}
+
+.App-footer {
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--container-border-color);
+  margin-top: auto;
+  font-size: 0.9em;
+  color: var(--main-text-dark-color);
+}
+
+.upload-area {
+  border: 2px dashed var(--container-border-color);
+  border-radius: 12px;
+  padding: 3rem;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+  background-color: transparent;
+  margin-bottom: 1.5rem;
+}
+
+.upload-area:hover, .upload-area.drag-over {
+  background-color: rgba(var(--main-primary-color-rgb), 0.1);
+  border-color: var(--main-primary-color);
+}
+
+.upload-area p {
+  font-size: 1.1em;
+  color: var(--main-text-color);
+  margin-bottom: 0.5rem;
+}
+
+.upload-area span {
+  font-size: 0.9em;
+  color: var(--main-text-dark-color);
+}
+
+/* App.tsx 메인 콘텐츠 영역 */
+.main-content {
+  display: flex;
+  flex-direction: column; /* 기본적으로 수직 정렬 */
+  gap: 2rem; /* 섹션 간 간격 */
+  width: 100%;
+  align-items: center; /* 내부 섹션들을 중앙 정렬 */
+}
+
+/* 데스크탑 화면에서는 가로로 배치 고려 */
+@media (min-width: 768px) {
+  .main-content {
+    flex-direction: row; /* 넓은 화면에서는 가로로 */
+    align-items: flex-start; /* 상단 정렬 */
+    justify-content: space-around; /* 공간 분배 */
+  }
+  .input-section {
+    flex-basis: 48%; /* 각 섹션이 절반 정도 차지하도록 */
+  }
+}
+
+.input-section {
+  background-color: var(--container-bg-color);
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
+  border: 1px solid var(--container-border-color);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  width: 100%; /* 모바일에서는 전체 너비 */
+  max-width: 500px; /* 최대 너비 제한 */
+  text-align: left;
+}
+
+.input-section h2 {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-size: 1.6em;
+  color: var(--main-primary-color);
+}
+
+/* 프롬프트 입력 섹션 */
+.prompt-input-section {
+  /* 추가적인 개별 스타일링 가능 */
+}
+
+.prompt-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.prompt-textarea {
+  background-color: rgba(0,0,0,0.2);
+  color: var(--main-text-color);
+  border: 1px solid var(--container-border-color);
+  border-radius: 8px;
+  padding: 0.8em 1em;
+  font-family: inherit;
+  font-size: 1em;
+  min-height: 80px; /* 최소 높이 */
+  resize: vertical; /* 수직으로만 크기 조절 가능 */
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.prompt-textarea:focus {
+  border-color: var(--main-primary-color);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--main-primary-color-rgb), 0.3);
+}
+
+.prompt-submit-button {
+  /* 기본 button 스타일 상속. 필요시 추가/재정의 */
+  /* 예: width: 100%; */
+}
+
+/* 파일 업로드 섹션 */
+.file-upload-section {
+  /* 기존 excel-uploader-container 스타일과 유사하게 맞춤 */
+  /* excel-uploader-container 클래스 자체의 스타일을 조정해도 됨 */
+}
+
+/* excel-uploader-container를 input-section 스타일과 통합 */
+.excel-uploader-container {
+  background-color: transparent; /* 부모인 .input-section 배경 사용 */
+  padding: 0; /* 내부에서 자체 패딩 관리 */
+  border: none;
+  box-shadow: none;
+  width: 100%;
+  max-width: none; 
+  margin: 0; /* 부모인 .input-section 마진 사용 */
+} 
