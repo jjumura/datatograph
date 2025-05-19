@@ -18,6 +18,7 @@ from app.routes.api import router as api_router
 from app.routes.excel import router as excel_router
 from app.routes.visualize import router as visualize_router
 from app.routes.ai import router as ai_router
+from app.routes.simple_animation import router as simple_anim_router
 
 # 로깅 기본 설정
 LOGGING_CONFIG = {
@@ -113,6 +114,7 @@ app.include_router(api_router, prefix="/api")
 app.include_router(excel_router, prefix="/api/excel")
 app.include_router(visualize_router, prefix="/api/visualize") # 프론트엔드 호출 경로와 일치
 app.include_router(ai_router, prefix="/api/ai")
+app.include_router(simple_anim_router, prefix="/api/simple-animation")
 
 if __name__ == "__main__":
     import uvicorn

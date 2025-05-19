@@ -13,6 +13,7 @@ class ChartResponse(BaseModel):
     sheet_name: str # 프롬프트의 경우 "Prompt Analysis" 등으로 설정 가능
     original_file_name: str # 프롬프트의 경우 프롬프트 텍스트 일부 또는 고정값
     chart_base64: Optional[str] = None
+    chart_svg_path: Optional[str] = None  # SVG 파일 경로 추가
     columns: Optional[List[str]] = None
     numeric_columns: Optional[List[str]] = None
     rows_count: Optional[int] = None

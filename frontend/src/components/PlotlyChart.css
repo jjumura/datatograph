@@ -1,0 +1,72 @@
+.plotly-chart-container {
+  position: relative;
+  width: 100%;
+  height: 500px;
+  background-color: #1a1a2e;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.plotly-chart {
+  width: 100%;
+  height: 100%;
+}
+
+.plotly-chart-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(26, 26, 46, 0.8);
+  z-index: 10;
+  color: #e0e0e0;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 3px solid rgba(0, 224, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #00e0ff;
+  animation: spin 1s ease-in-out infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.plotly-chart-error {
+  padding: 20px;
+  color: #ff6b6b;
+  text-align: center;
+  background-color: rgba(255, 107, 107, 0.1);
+  border-left: 4px solid #ff6b6b;
+  border-radius: 0 4px 4px 0;
+  margin: 10px 0;
+}
+
+/* Plotly 요소 스타일 커스터마이징 */
+:global(.js-plotly-plot .plotly) {
+  font-family: 'Pretendard', sans-serif !important;
+}
+
+:global(.js-plotly-plot .plotly .modebar) {
+  background-color: rgba(26, 26, 46, 0.7) !important;
+}
+
+:global(.js-plotly-plot .plotly .modebar-btn path) {
+  fill: #e0e0e0 !important;
+}
+
+:global(.js-plotly-plot .plotly .modebar-btn:hover path) {
+  fill: #00e0ff !important;
+} 

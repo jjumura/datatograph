@@ -6,6 +6,7 @@ export interface ChartData {
   sheet_name: string;
   original_file_name: string; // 추가됨
   chart_base64: string | null; // 백엔드에서 에러 시 null일 수 있음
+  chart_svg_path: string | null; // SVG 파일 경로 추가
   columns: string[] | null;
   numeric_columns: string[] | null;
   rows_count: number | null;

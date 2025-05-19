@@ -118,7 +118,7 @@ def cleanup_old_charts(max_age_hours: int = 1):
         current_time = datetime.now()
         max_age = timedelta(hours=max_age_hours)
         
-        # 디렉토리 내의 모든 PNG 파일 검사
+        # 디렉토리 내의 모든 PNG, SVG 파일 검사
         for file in img_dir.glob("*.png"):
             try:
                 file_time = datetime.fromtimestamp(file.stat().st_mtime)
@@ -127,7 +127,18 @@ def cleanup_old_charts(max_age_hours: int = 1):
                 if age > max_age:
                     file.unlink()
                     logger.info(f"오래된 차트 파일 삭제: {file}")
-                    
+            except Exception as e:
+                logger.error(f"파일 {file} 처리 중 오류 발생: {e}")
+                
+        # SVG 파일도 정리
+        for file in img_dir.glob("*.svg"):
+            try:
+                file_time = datetime.fromtimestamp(file.stat().st_mtime)
+                age = current_time - file_time
+                
+                if age > max_age:
+                    file.unlink()
+                    logger.info(f"오래된 SVG 파일 삭제: {file}")
             except Exception as e:
                 logger.error(f"파일 {file} 처리 중 오류 발생: {e}")
                 
@@ -257,7 +268,7 @@ async def process_single_sheet(df: pd.DataFrame,
         chart_type_to_render = "line" # 기본값
         x_col_to_render = df.columns[0] if len(df.columns) > 0 else None
         y_cols_to_render = numeric_cols[:3] if numeric_cols else []
-        title_to_render = f"{sheet_name} ({file_name}) 데이터 차트"
+        title_to_render = f"{sheet_name} 데이터 시각화" # 짧고 명확한 기본 타이틀로 변경
 
         if gemini_suggestion and not gemini_suggestion.get("error") and gemini_suggestion.get("primary_chart_suggestion"):
             primary_suggestion = gemini_suggestion["primary_chart_suggestion"]
@@ -285,13 +296,17 @@ async def process_single_sheet(df: pd.DataFrame,
                         chart_type_to_render = suggested_chart_type
                         x_col_to_render = valid_x
                         y_cols_to_render = [valid_value_col] # 파이/도넛은 값 컬럼 하나를 y로 취급
-                        title_to_render = f"Gemini 추천: {sheet_name} - {primary_suggestion.get('reason', suggested_chart_type)}"
+                        title_to_render = f"{x_col_to_render}별 {y_cols_to_render[0]} 분포" # 더 직관적인 제목으로 변경
                         logger.info(f"Gemini 추천 적용 (pie/donut): type={chart_type_to_render}, x='{x_col_to_render}', y='{y_cols_to_render}'")
                 elif valid_x and valid_y:
                     chart_type_to_render = suggested_chart_type
                     x_col_to_render = valid_x
                     y_cols_to_render = valid_y
-                    title_to_render = f"Gemini 추천: {sheet_name} - {primary_suggestion.get('reason', suggested_chart_type)}"
+                    # 더 직관적인 제목으로 변경
+                    if len(y_cols_to_render) == 1:
+                        title_to_render = f"{x_col_to_render}에 따른 {y_cols_to_render[0]} 추이"
+                    else:
+                        title_to_render = f"{x_col_to_render}에 따른 {len(y_cols_to_render)}개 항목 비교"
                     logger.info(f"Gemini 추천 적용: type={chart_type_to_render}, x='{x_col_to_render}', y='{y_cols_to_render}'")
                 else:
                     logger.warning(f"Gemini 추천 컬럼 ('{raw_x}', '{raw_y}')이 유효하지 않아 기본 차트 생성.")
@@ -328,15 +343,24 @@ async def process_single_sheet(df: pd.DataFrame,
         ensure_temp_dir()
         
         # autorender를 사용하여 차트 생성
-        chart_path = await autorender.render(df, chart_context, temp_dir=temp_dir)
+        chart_result = await autorender.render(df, chart_context, temp_dir=temp_dir)
         
         chart_base64 = None
-        if chart_path:
+        chart_svg_path = None
+        
+        if isinstance(chart_result, dict) and "png_path" in chart_result:
+            png_path = chart_result["png_path"]
+            svg_path = chart_result.get("svg_path")
+            
             try:
-                with open(chart_path, "rb") as image_file:
-                    chart_base64 = base64.b64encode(image_file.read()).decode('utf-8')
-                # Base64 인코딩 후 원본 임시 파일 삭제 (선택 사항)
-                # Path(chart_path).unlink(missing_ok=True) 
+                if png_path:
+                    with open(png_path, "rb") as image_file:
+                        chart_base64 = base64.b64encode(image_file.read()).decode('utf-8')
+                
+                # SVG 파일 경로 저장 (파일 명만 저장)
+                if svg_path:
+                    chart_svg_path = Path(svg_path).name
+                    
             except Exception as e:
                 logger.error(f"차트 파일을 Base64로 인코딩 중 오류 발생: {e}")
                 return [{
@@ -344,6 +368,23 @@ async def process_single_sheet(df: pd.DataFrame,
                     "original_file_name": file_name,
                     "error": f"차트 인코딩 오류: {str(e)}",
                     "chart_base64": None,
+                    "chart_svg_path": None,
+                    "gemini_suggestion": gemini_suggestion
+                }]
+        else:
+            # 이전 버전 호환성 유지
+            try:
+                if chart_result:
+                    with open(chart_result, "rb") as image_file:
+                        chart_base64 = base64.b64encode(image_file.read()).decode('utf-8')
+            except Exception as e:
+                logger.error(f"차트 파일을 Base64로 인코딩 중 오류 발생: {e}")
+                return [{
+                    "sheet_name": sheet_name,
+                    "original_file_name": file_name,
+                    "error": f"차트 인코딩 오류: {str(e)}",
+                    "chart_base64": None,
+                    "chart_svg_path": None,
                     "gemini_suggestion": gemini_suggestion
                 }]
         
@@ -353,6 +394,7 @@ async def process_single_sheet(df: pd.DataFrame,
                 "original_file_name": file_name,
                 "error": "차트 생성 또는 인코딩에 실패했습니다.",
                 "chart_base64": None,
+                "chart_svg_path": None,
                 "gemini_suggestion": gemini_suggestion
             }]
 
@@ -360,6 +402,7 @@ async def process_single_sheet(df: pd.DataFrame,
             "sheet_name": sheet_name,
             "original_file_name": file_name,
             "chart_base64": chart_base64, # Base64 인코딩된 차트 데이터
+            "chart_svg_path": chart_svg_path,  # SVG 파일 경로
             "columns": df.columns.tolist(),
             "numeric_columns": numeric_cols,
             "rows_count": len(df),
@@ -373,5 +416,24 @@ async def process_single_sheet(df: pd.DataFrame,
             "original_file_name": file_name,
             "error": f"차트 생성 중 오류 발생: {str(e)}",
             "chart_base64": None,
+            "chart_svg_path": None,
             "gemini_suggestion": gemini_suggestion
         }] 
+
+async def render_chart_from_df(df: pd.DataFrame, render_context: Dict[str, Any], temp_dir: Path = None) -> Dict[str, str]:
+    """autorender를 사용하여 DataFrame에서 차트를 렌더링합니다. 차트 이미지 경로를 반환합니다."""
+    if temp_dir is None:
+        temp_dir = ensure_temp_dir()
+    
+    try:
+        chart_result = await autorender.render(df, render_context, temp_dir)
+        # chart_result가 딕셔너리가 아니라면 이전 버전 호환성을 위해 처리
+        if not isinstance(chart_result, dict):
+            return {
+                "png_path": chart_result,
+                "svg_path": None
+            }
+        return chart_result
+    except Exception as e:
+        logger.error(f"render_chart_from_df 실행 중 오류 발생: {e}", exc_info=True)
+        return None 
