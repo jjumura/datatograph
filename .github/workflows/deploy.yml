@@ -15,46 +15,40 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # 1. 구글 인증 (v2로 업그레이드, 더 안정적)
       - name: Google Auth
         id: auth
         uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
-      # 2. gcloud 설치 (프로젝트/리전 지정 가능)
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           install_components: 'beta'
 
-      # 3. gcloud 동작 확인 (선택)
       - name: Use gcloud CLI
         run: gcloud info
 
-      # 4. Docker 인증
       - name: Authorize Docker push
-        run: gcloud auth configure-docker gcr.io
+        run: gcloud auth configure-docker asia-northeast3-docker.pkg.dev
 
-      # 5. Docker 빌드 & 푸시
       - name: Build and Push Container
         working-directory: ./backend
         env:
           PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t gcr.io/$PROJECT_ID/fastapi-backend:$IMAGE_TAG .
-          docker push gcr.io/$PROJECT_ID/fastapi-backend:$IMAGE_TAG
+          docker build -t asia-northeast3-docker.pkg.dev/$PROJECT_ID/fastapi-backend-repo/fastapi-backend:$IMAGE_TAG .
+          docker push asia-northeast3-docker.pkg.dev/$PROJECT_ID/fastapi-backend-repo/fastapi-backend:$IMAGE_TAG
 
-      # 6. Cloud Run 배포
       - name: Deploy to Cloud Run
         env:
           PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
           gcloud run deploy fastapi-backend \
-            --image gcr.io/$PROJECT_ID/fastapi-backend:$IMAGE_TAG \
+            --image asia-northeast3-docker.pkg.dev/$PROJECT_ID/fastapi-backend-repo/fastapi-backend:$IMAGE_TAG \
             --platform managed \
             --region asia-northeast3 \
             --allow-unauthenticated \
