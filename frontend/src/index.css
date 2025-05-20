@@ -762,3 +762,15 @@ button:disabled,
   padding: 8px 12px;
   font-size: 14px;
 } 
+
+/* === 유틸리티 클래스 영역 === */
+.highlight {
+  font-weight: 800 !important;
+  color: var(--main-text-light-color);
+}
+
+.upload-icon {
+  font-size: 64px;
+  margin-bottom: 8px;
+  text-align: center;
+}

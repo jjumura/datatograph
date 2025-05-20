@@ -46,7 +46,7 @@ function App() {
   const [appState, setAppState] = useState<AppState>('idle');
   const [chartData, setChartData] = useState<ChartData[] | null>(null);
   const [plotlyChartData, setPlotlyChartData] = useState<PlotlyChartData[] | null>(null);
-  const [useInteractive, setUseInteractive] = useState<boolean>(true); // 기본값을 true로 변경
+  const [useInteractive, setUseInteractive] = useState<boolean>(true); // 항상 인터랙티브 차트 사용
   const [error, setError] = useState<string | null>(null);
   const [loadingMessage, setLoadingMessage] = useState<string>("데이터 분석 중...");
   const [showStyleEditor, setShowStyleEditor] = useState<boolean>(false);
@@ -139,7 +139,7 @@ function App() {
   };
 
   const toggleChartType = () => {
-    setUseInteractive(!useInteractive);
+    // 더 이상 상태를 변경하지 않음
   };
 
   const handleFileUpload = useCallback(async (file: File, sheetName?: string) => {
@@ -154,35 +154,16 @@ function App() {
     try {
       setLoadingMessage("데이터 처리 및 차트 생성 중...");
       
-      // 사용자 설정에 따라 정적 차트 또는 인터랙티브 차트 요청
-      if (useInteractive) {
-        // Plotly 기반 차트 요청
-        const response = await axios.post<PlotlyChartData[]>('/api/visualize/plotly/excel', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-        
-        setLoadingMessage("인터랙티브 차트 생성 완료!");
-        setPlotlyChartData(response.data);
-        setChartData(null);
-      } else {
-        // 기존 정적 차트 요청
-        const response = await axios.post<ChartData[]>('/api/visualize/excel', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-        
-        if (response.data && response.data[0] && response.data[0].gemini_suggestion && response.data[0].gemini_suggestion.primary_chart_suggestion) {
-          setLoadingMessage(`AI 추천 (${response.data[0].gemini_suggestion.primary_chart_suggestion.chart_type}) 분석 완료!`);
-        } else {
-          setLoadingMessage("분석 완료! 결과 준비 중...");
-        }
-        
-        setChartData(response.data);
-        setPlotlyChartData(null);
-      }
+      // 항상 인터랙티브 차트 요청
+      const response = await axios.post<PlotlyChartData[]>('/api/visualize/plotly/excel', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      setLoadingMessage("인터랙티브 차트 생성 완료!");
+      setPlotlyChartData(response.data);
+      setChartData(null);
       
       setAppState('results');
       setError(null);
@@ -202,7 +183,7 @@ function App() {
       setPlotlyChartData(null);
       setAppState('error');
     }
-  }, [useInteractive]);
+  }, []);  // useInteractive 의존성 제거
 
   // PNG 다운로드 처리
   const handleDownloadPNG = () => {
@@ -281,7 +262,7 @@ function App() {
       {appState === 'processing' && <LoadingPage message={loadingMessage} />}
 
       <header className="App-header">
-        <h1>AI 데이터 분석 및 시각화 도구</h1>
+        <h1>AI 딸깍 데이터 시각화 도구</h1>
         {appState === 'error' && (
           <button onClick={handleReset} className="back-button">
             처음으로
@@ -294,24 +275,6 @@ function App() {
         <main className="main-content">
           <div className="input-section file-upload-section">
             <h2>파일 업로드</h2>
-            <div className="chart-type-toggle">
-              <label className="toggle-label">
-                <input
-                  type="checkbox"
-                  checked={useInteractive}
-                  onChange={toggleChartType}
-                  className="toggle-checkbox"
-                />
-                <span className="toggle-text">
-                  {useInteractive ? '인터랙티브 차트 (Plotly/D3.js)' : '정적 차트 (Matplotlib)'}
-                </span>
-              </label>
-              <div className="toggle-description">
-                {useInteractive ? 
-                  '인터랙티브 차트는 확대/축소, 데이터 탐색, 시각화 옵션 변경이 가능합니다.' : 
-                  '정적 차트는 기본적인 시각화와 AI 분석을 제공합니다.'}
-              </div>
-            </div>
             <ExcelUploader onFileUpload={handleFileUpload} disabled={appState !== 'idle'} />
           </div>
         </main>

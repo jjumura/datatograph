@@ -143,8 +143,8 @@ const ExcelUploader: React.FC<ExcelUploaderProps> = ({ onFileUpload, disabled })
           className="file-input"
           disabled={disabled}
         />
-        <div className="upload-icon">📄</div>
-        <p className="upload-text">여기에 파일을 드래그하거나 클릭하여 업로드하세요.</p>
+        <div className="upload-icon">📊</div>
+        <p className="upload-text">여기에 파일을 드래그하거나 <br />클릭하여 업로드하세요.</p>
         <p className="file-types">(.xls, .xlsx, .csv 파일만 지원)</p>
       </div>
       
