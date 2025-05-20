@@ -6,6 +6,9 @@ import LoadingPage from './components/LoadingPage';
 import PlotlyChart from './components/PlotlyChart'; // Plotly 차트 컴포넌트 
 import D3Chart from './components/D3Chart'; // D3.js 차트 컴포넌트 추가
 
+// Cloud Run에 배포된 백엔드 서버 URL
+const API_URL = 'https://fastapi-backend-986535008493.asia-northeast3.run.app';
+
 // App 상태 정의 (progress_view 상태 제거)
 type AppState = 'idle' | 'processing' | 'results' | 'error';
 
@@ -105,7 +108,7 @@ function App() {
       }
       
       // 서버에 색상 업데이트 요청
-      const response = await axios.post('/api/visualize/update-chart-colors', {
+      const response = await axios.post(`${API_URL}/api/visualize/update-chart-colors`, {
         data_frame: JSON.stringify(parsedChartData.dataframe || {}),
         chart_context: {
           chart_type: currentChart.chart_type,
@@ -155,7 +158,7 @@ function App() {
       setLoadingMessage("데이터 처리 및 차트 생성 중...");
       
       // 항상 인터랙티브 차트 요청
-      const response = await axios.post<PlotlyChartData[]>('/api/visualize/plotly/excel', formData, {
+      const response = await axios.post<PlotlyChartData[]>(`${API_URL}/api/visualize/plotly/excel`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
