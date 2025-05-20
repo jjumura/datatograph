@@ -10,6 +10,9 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
     
     steps:
       - uses: actions/checkout@v3
@@ -19,16 +22,15 @@ jobs:
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
-          token_format: 'access_token'
       
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
-        with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
       
-      - name: Authorize Docker push to Google Container Registry
-        run: |
-          echo ${{ steps.auth.outputs.access_token }} | docker login -u oauth2accesstoken --password-stdin https://gcr.io
+      - name: Use gcloud CLI
+        run: gcloud info
+      
+      - name: Authorize Docker push
+        run: gcloud auth configure-docker gcr.io
       
       - name: Build and Push Container
         working-directory: ./backend
