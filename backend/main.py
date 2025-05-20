@@ -11,7 +11,7 @@ app = FastAPI()
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 또는 ["https://dtv-five.vercel.app"]로 명확히 지정
+    allow_origins=["*"],  # 또는 ["https://dtv-dpdps-projects.vercel.app"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
