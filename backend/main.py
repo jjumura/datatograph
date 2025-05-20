@@ -11,7 +11,7 @@ app = FastAPI()
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 실제 운영 환경에서는 프론트엔드 도메인으로 제한해야 함
+    allow_origins=["*"],  # 또는 ["https://dtv-five.vercel.app"]로 명확히 지정
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
