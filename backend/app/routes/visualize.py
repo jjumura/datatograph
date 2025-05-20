@@ -14,6 +14,8 @@ import logging
 import base64
 import re
 import io
+import json
+import plotly.graph_objects as go
 
 logger = logging.getLogger(__name__)
 logger.info("visualize.py logger initialized and router about to be defined.")
@@ -383,6 +385,7 @@ async def visualize_excel_plotly(
                     'original_file_name': file.filename,
                     'chart_type': 'heatmap',
                     'chart_json': heatmap_result['chart_json'],
+                    'd3_data': heatmap_result.get('d3_data', '{}'),
                     'columns': df.columns.tolist(),
                     'numeric_columns': numeric_columns,
                     'rows_count': len(df)
@@ -399,11 +402,37 @@ async def visualize_excel_plotly(
             # Plotly 차트 렌더링
             chart_result = render_plotly_chart(df, chart_context)
             
+            # 오류 발생 확인
+            if 'error' in chart_result:
+                logger.error(f"차트 렌더링 오류: {chart_result['error']}")
+                results.append({
+                    'sheet_name': sheet_name,
+                    'original_file_name': file.filename,
+                    'chart_type': chart_type,
+                    'error': chart_result['error'],
+                    'columns': df.columns.tolist(),
+                    'numeric_columns': numeric_columns,
+                    'rows_count': len(df)
+                })
+                continue
+                
+            # 결과에 차트 JSON 추가
+            chart_json = None
+            if 'chart_json' in chart_result:
+                chart_json = chart_result['chart_json']
+            elif 'data' in chart_result:
+                chart_json = chart_result['data']
+                logger.warning("chart_result에 'chart_json' 대신 'data' 키가 사용되었습니다.")
+            else:
+                logger.error("차트 결과에 chart_json 또는 data 키가 없습니다")
+                chart_json = "{}"
+            
             results.append({
                 'sheet_name': sheet_name,
                 'original_file_name': file.filename,
                 'chart_type': chart_type,
-                'chart_json': chart_result['chart_json'],
+                'chart_json': chart_json,
+                'd3_data': chart_result.get('d3_data', '{}'),
                 'columns': df.columns.tolist(),
                 'numeric_columns': numeric_columns,
                 'rows_count': len(df)
@@ -424,4 +453,153 @@ async def visualize_excel_plotly(
         raise http_exc
     except Exception as e:
         logger.exception(f"Unexpected error during plotly excel visualization for {file.filename}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"서버 내부 오류 발생: {str(e)}")
+
+@router.post("/update-chart-colors")
+async def update_chart_colors(
+    request: Dict[str, Any]
+):
+    """
+    차트 색상을 업데이트하고 새로운 차트 JSON 생성
+    
+    Args:
+        request: 색상 업데이트 요청 데이터
+            - data_frame: 직렬화된 데이터프레임 (JSON 문자열)
+            - chart_context: 차트 컨텍스트 정보
+            - colors: 새로운 색상 목록
+    """
+    try:
+        # 요청 데이터 추출
+        data_json = request.get('data_frame')
+        chart_context = request.get('chart_context', {})
+        colors = request.get('colors', [])
+        
+        if not data_json:
+            raise HTTPException(status_code=400, detail="데이터프레임이 제공되지 않았습니다")
+            
+        # JSON으로 직렬화된 데이터프레임 파싱
+        try:
+            df = pd.read_json(data_json)
+        except Exception as e:
+            logger.error(f"데이터프레임 파싱 오류: {e}")
+            raise HTTPException(status_code=400, detail=f"데이터프레임을 파싱할 수 없습니다: {str(e)}")
+            
+        # 차트 컨텍스트에 색상 추가
+        chart_context['colors'] = colors
+        
+        # 새로운 차트 렌더링
+        result = render_plotly_chart(df, chart_context)
+        
+        # 에러 확인
+        if 'error' in result:
+            logger.error(f"차트 색상 업데이트 중 오류: {result['error']}")
+            return {"error": result['error']}
+        
+        # chart_json 키 확인
+        chart_json = None
+        if 'chart_json' in result:
+            chart_json = result['chart_json']
+        elif 'data' in result:
+            chart_json = result['data']
+            logger.warning("result에 'chart_json' 대신 'data' 키가 사용되었습니다.")
+        else:
+            logger.error("차트 결과에 chart_json 또는 data 키가 없습니다")
+            return {"error": "차트 JSON을 생성할 수 없습니다."}
+        
+        return {
+            'chart_json': chart_json,
+            'd3_data': result.get('d3_data', '{}'),
+            'chart_type': chart_context.get('chart_type', 'bar')
+        }
+        
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        logger.exception(f"차트 색상 업데이트 중 오류: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"서버 내부 오류 발생: {str(e)}")
+
+@router.post("/d3-export")
+async def export_to_d3(
+    request: Dict[str, Any]
+):
+    """
+    Plotly 차트 데이터를 D3.js와 호환되는 형식으로 변환
+    
+    Args:
+        request: 변환 요청 데이터
+            - chart_json: Plotly 차트 JSON
+            - chart_type: 차트 유형
+    """
+    try:
+        chart_json = request.get('chart_json')
+        
+        if not chart_json:
+            raise HTTPException(status_code=400, detail="차트 JSON이 제공되지 않았습니다")
+            
+        # Plotly 차트 파싱
+        try:
+            chart_data = json.loads(chart_json)
+            
+            # D3.js 호환 데이터 생성
+            d3_data = {
+                'type': request.get('chart_type', 'bar'),
+                'layout': chart_data.get('layout', {}),
+                'data': chart_data.get('data', [])
+            }
+            
+            return {
+                'd3_data': d3_data
+            }
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"차트 JSON 파싱 오류: {e}")
+            raise HTTPException(status_code=400, detail="차트 JSON을 파싱할 수 없습니다")
+            
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        logger.exception(f"D3.js 내보내기 중 오류: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"서버 내부 오류 발생: {str(e)}")
+
+@router.get("/download-png")
+async def download_png(chart_json: str = Query(...)):
+    """
+    Plotly 차트를 PNG 이미지로 변환하여 다운로드
+    
+    Args:
+        chart_json: Plotly 차트 JSON (URL 쿼리 파라미터)
+    """
+    try:
+        import plotly.io as pio
+        from io import BytesIO
+        from fastapi.responses import StreamingResponse
+        
+        # 차트 JSON 파싱
+        try:
+            chart_data = json.loads(chart_json)
+            fig = go.Figure(chart_data)
+            
+            # PNG로 변환
+            img_bytes = BytesIO()
+            fig.write_image(img_bytes, format='png', width=1200, height=800)
+            img_bytes.seek(0)
+            
+            # 스트리밍 응답으로 반환
+            return StreamingResponse(
+                img_bytes, 
+                media_type='image/png',
+                headers={'Content-Disposition': 'attachment; filename="chart.png"'}
+            )
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"차트 JSON 파싱 오류: {e}")
+            raise HTTPException(status_code=400, detail="차트 JSON을 파싱할 수 없습니다")
+            
+    except ImportError as e:
+        logger.error(f"필요한 라이브러리가 설치되지 않았습니다: {e}")
+        raise HTTPException(status_code=500, detail="PNG 내보내기에 필요한 라이브러리가 설치되지 않았습니다")
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        logger.exception(f"PNG 다운로드 중 오류: {str(e)}")
         raise HTTPException(status_code=500, detail=f"서버 내부 오류 발생: {str(e)}")

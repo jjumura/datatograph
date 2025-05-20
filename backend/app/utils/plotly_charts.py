@@ -34,7 +34,20 @@ class PlotlyChartGenerator:
                 y=-0.3,
                 xanchor="center",
                 x=0.5
-            )
+            ),
+            # 타이틀 설정
+            title={
+                'text': fig.layout.title.text,
+                'font': {
+                    'family': 'Pretendard, sans-serif',
+                    'size': 18,
+                    'color': 'white'
+                },
+                'xanchor': 'center',
+                'x': 0.5,
+                'yanchor': 'top',
+                'y': 0.95,
+            }
         )
         
         # 그리드 스타일 조정
@@ -51,8 +64,50 @@ class PlotlyChartGenerator:
         
         return fig
     
-    def generate_bar_chart(self, df: pd.DataFrame, x: str, y: Union[str, List[str]], title: str) -> go.Figure:
+    def _prepare_d3_data(self, fig):
+        """Plotly 차트 데이터를 D3.js에서 사용할 수 있는 형식으로 변환"""
+        try:
+            d3_data = {
+                'type': fig.data[0].type if len(fig.data) > 0 else 'bar',
+                'series': [],
+                'layout': {
+                    'title': fig.layout.title.text if hasattr(fig.layout.title, 'text') else '',
+                    'xaxis': {
+                        'title': fig.layout.xaxis.title.text if hasattr(fig.layout.xaxis, 'title') else '',
+                    },
+                    'yaxis': {
+                        'title': fig.layout.yaxis.title.text if hasattr(fig.layout.yaxis, 'title') else '',
+                    }
+                }
+            }
+            
+            # 차트 유형별로 데이터 변환
+            for trace in fig.data:
+                series = {
+                    'name': trace.name if hasattr(trace, 'name') else '',
+                    'color': trace.marker.color if hasattr(trace, 'marker') and hasattr(trace.marker, 'color') else None
+                }
+                
+                # X, Y 데이터 추출 (차트 유형별로 다름)
+                if hasattr(trace, 'x') and hasattr(trace, 'y'):
+                    series['x'] = trace.x.tolist() if hasattr(trace.x, 'tolist') else trace.x
+                    series['y'] = trace.y.tolist() if hasattr(trace.y, 'tolist') else trace.y
+                elif hasattr(trace, 'values') and hasattr(trace, 'labels'):  # 파이 차트
+                    series['values'] = trace.values.tolist() if hasattr(trace.values, 'tolist') else trace.values
+                    series['labels'] = trace.labels.tolist() if hasattr(trace.labels, 'tolist') else trace.labels
+                
+                d3_data['series'].append(series)
+            
+            return json.dumps(d3_data)  # JSON 문자열로 변환
+        except Exception as e:
+            logger.error(f"D3 데이터 변환 오류: {str(e)}")
+            return json.dumps({'error': '데이터 변환 실패'})
+    
+    def generate_bar_chart(self, df: pd.DataFrame, x: str, y: Union[str, List[str]], title: str, colors: List[str] = None) -> go.Figure:
         """막대 차트 생성"""
+        # 사용자 정의 색상 사용 또는 기본 색상 사용
+        chart_colors = colors if colors else VIRIDIS_COLORS
+        
         if isinstance(y, list) and len(y) > 1:
             # 여러 y 값에 대한 그룹화된 막대 차트
             fig = go.Figure()
@@ -62,7 +117,7 @@ class PlotlyChartGenerator:
                     x=df[x],
                     y=df[y_col],
                     name=y_col,
-                    marker_color=VIRIDIS_COLORS[i % len(VIRIDIS_COLORS)]
+                    marker_color=chart_colors[i % len(chart_colors)]
                 ))
                 
             # 막대 모양 설정 - 여기서 모든 트레이스에 대해 한 번에 설정
@@ -95,7 +150,7 @@ class PlotlyChartGenerator:
                 x=x, 
                 y=y_col,
                 title=title,
-                color_discrete_sequence=VIRIDIS_COLORS
+                color_discrete_sequence=chart_colors
             )
             
             # 막대 모양 설정 - try/except로 안전하게 처리
@@ -117,14 +172,17 @@ class PlotlyChartGenerator:
             
         return self._apply_common_styles(fig)
     
-    def generate_line_chart(self, df: pd.DataFrame, x: str, y: Union[str, List[str]], title: str) -> go.Figure:
+    def generate_line_chart(self, df: pd.DataFrame, x: str, y: Union[str, List[str]], title: str, colors: List[str] = None) -> go.Figure:
         """선 차트 생성"""
+        # 사용자 정의 색상 사용 또는 기본 색상 사용
+        chart_colors = colors if colors else PLASMA_COLORS
+        
         fig = px.line(
             df, 
             x=x, 
             y=y,
             title=title,
-            color_discrete_sequence=PLASMA_COLORS
+            color_discrete_sequence=chart_colors
         )
         
         # 마커 추가
@@ -133,8 +191,11 @@ class PlotlyChartGenerator:
             
         return self._apply_common_styles(fig)
     
-    def generate_scatter_chart(self, df: pd.DataFrame, x: str, y: Union[str, List[str]], title: str) -> go.Figure:
+    def generate_scatter_chart(self, df: pd.DataFrame, x: str, y: Union[str, List[str]], title: str, colors: List[str] = None) -> go.Figure:
         """산점도 생성"""
+        # 사용자 정의 색상 사용 또는 기본 색상 사용
+        chart_colors = colors if colors else PLASMA_COLORS
+        
         if isinstance(y, list) and len(y) > 1:
             # 여러 y 값에 대한 여러 산점도
             fig = go.Figure()
@@ -147,7 +208,7 @@ class PlotlyChartGenerator:
                     mode='markers',
                     marker=dict(
                         size=10,
-                        color=PLASMA_COLORS[i % len(PLASMA_COLORS)]
+                        color=chart_colors[i % len(chart_colors)]
                     )
                 ))
                 
@@ -164,7 +225,7 @@ class PlotlyChartGenerator:
                 x=x, 
                 y=y_col,
                 title=title,
-                color_discrete_sequence=PLASMA_COLORS
+                color_discrete_sequence=chart_colors
             )
             
             # 마커 크기 조정
@@ -172,14 +233,17 @@ class PlotlyChartGenerator:
             
         return self._apply_common_styles(fig)
     
-    def generate_pie_chart(self, df: pd.DataFrame, labels: str, values: str, title: str) -> go.Figure:
+    def generate_pie_chart(self, df: pd.DataFrame, labels: str, values: str, title: str, colors: List[str] = None) -> go.Figure:
         """파이 차트 생성"""
+        # 사용자 정의 색상 사용 또는 기본 색상 사용
+        chart_colors = colors if colors else VIRIDIS_COLORS
+        
         fig = px.pie(
             df, 
             names=labels, 
             values=values,
             title=title,
-            color_discrete_sequence=VIRIDIS_COLORS
+            color_discrete_sequence=chart_colors
         )
         
         # 파이 차트 특화 스타일링
@@ -242,71 +306,114 @@ class PlotlyChartGenerator:
         return fig
 
 def render_plotly_chart(df: pd.DataFrame, chart_context: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Plotly 차트를 JSON으로 렌더링
-    
-    Args:
-        df: 데이터프레임
-        chart_context: 차트 설정 (타입, x축, y축 등)
-        
-    Returns:
-        Dict: 차트 JSON 및 관련 정보
-    """
-    chart_generator = PlotlyChartGenerator()
-    
-    chart_type = chart_context.get('chart_type', 'bar')
-    x_column = chart_context.get('x_column')
-    y_columns = chart_context.get('y_columns', [])
-    title = chart_context.get('title', '차트')
-    
-    if isinstance(y_columns, str):
-        y_columns = [y_columns]
-    
-    fig = None
-    
+    """차트 컨텍스트 정보를 기반으로 Plotly 차트 생성"""
     try:
+        chart_type = chart_context.get('chart_type', 'bar')
+        title = chart_context.get('title', '차트')
+        x_column = chart_context.get('x_column')
+        y_columns = chart_context.get('y_columns', [])
+        colors = chart_context.get('colors')
+        
+        # 로그 추가
+        logger.info(f"차트 생성 시작: 타입={chart_type}, 제목={title}, X={x_column}, Y={y_columns}")
+        
+        # 입력 검증
+        if not x_column or not y_columns:
+            logger.error(f"차트 생성 실패: x_column={x_column}, y_columns={y_columns}")
+            return {"error": "차트 생성에 필요한 x_column 또는 y_columns가 없습니다."}
+        
+        # DataFrame 검증
+        if df is None or df.empty:
+            logger.error("차트 생성 실패: DataFrame이 비어있거나 None입니다.")
+            return {"error": "차트 생성에 필요한 데이터가 없습니다."}
+            
+        # 컬럼 존재 여부 확인
+        if x_column not in df.columns:
+            logger.error(f"차트 생성 실패: x_column '{x_column}'이 DataFrame에 존재하지 않습니다.")
+            return {"error": f"지정한 X 컬럼({x_column})이 데이터에 존재하지 않습니다."}
+            
+        # y_columns 검증
+        valid_y_columns = []
+        for y_col in y_columns:
+            if y_col in df.columns:
+                valid_y_columns.append(y_col)
+            else:
+                logger.warning(f"Y 컬럼({y_col})이 DataFrame에 존재하지 않아 무시됩니다.")
+                
+        if not valid_y_columns:
+            logger.error("차트 생성 실패: 유효한 Y 컬럼이 없습니다.")
+            return {"error": "차트 생성에 필요한 유효한 Y 컬럼이 없습니다."}
+        
+        # y_columns 업데이트    
+        y_columns = valid_y_columns
+        
+        # 차트 생성기 초기화
+        chart_generator = PlotlyChartGenerator()
+        
+        # 차트 유형에 따라 적절한 생성 함수 호출
         if chart_type == 'bar':
-            fig = chart_generator.generate_bar_chart(df, x_column, y_columns, title)
+            fig = chart_generator.generate_bar_chart(df, x_column, y_columns, title, colors)
         elif chart_type == 'line':
-            fig = chart_generator.generate_line_chart(df, x_column, y_columns, title)
+            fig = chart_generator.generate_line_chart(df, x_column, y_columns, title, colors)
         elif chart_type == 'scatter':
-            fig = chart_generator.generate_scatter_chart(df, x_column, y_columns, title)
+            fig = chart_generator.generate_scatter_chart(df, x_column, y_columns, title, colors)
         elif chart_type == 'pie' and len(y_columns) > 0:
-            fig = chart_generator.generate_pie_chart(df, x_column, y_columns[0], title)
+            fig = chart_generator.generate_pie_chart(df, x_column, y_columns[0], title, colors)
         elif chart_type == 'heatmap':
             fig = chart_generator.generate_heatmap(df, title)
         else:
-            # 지원하지 않는 차트 타입이거나 데이터가 부적합한 경우
-            fig = chart_generator.generate_fallback_chart(df, f"{title} (미리보기)")
-            
-        # Plotly 차트를 JSON으로 변환
-        chart_json = fig.to_json()
+            # 지원하지 않는 차트 유형 또는 오류 상황에서 기본 차트 생성
+            logger.warning(f"지원하지 않는 차트 유형: {chart_type}, 기본 차트로 대체합니다.")
+            fig = chart_generator.generate_fallback_chart(df, f"{title} (지원하지 않는 차트 유형)")
         
+        # 타이틀 처리 - 문자열 타입과 길이 확인
+        if fig.layout.title and hasattr(fig.layout.title, 'text'):
+            if fig.layout.title.text is None:
+                fig.layout.title.text = "차트"  # 기본 타이틀 설정
+            elif not isinstance(fig.layout.title.text, str):
+                fig.layout.title.text = str(fig.layout.title.text)  # 문자열로 변환
+            # 타이틀 길이 제한
+            if len(fig.layout.title.text) > 50:
+                fig.layout.title.text = fig.layout.title.text[:47] + "..."
+                
+        # JSON으로 변환 - 안전한 방식 사용
+        try:
+            # plotly.utils 사용 (권장)
+            from plotly.utils import PlotlyJSONEncoder
+            chart_data = json.dumps(fig.to_dict(), cls=PlotlyJSONEncoder)
+            logger.info(f"차트 JSON 변환 성공 (PlotlyJSONEncoder 사용)")
+        except Exception as e:
+            logger.error(f"Plotly JSON 변환 오류 (to_dict): {str(e)}")
+            # 대체 방법
+            try:
+                import plotly.io as pio
+                chart_data = pio.to_json(fig)
+                logger.info(f"차트 JSON 변환 성공 (pio.to_json 사용)")
+            except Exception as e2:
+                logger.error(f"Plotly JSON 변환 오류 (pio.to_json): {str(e2)}")
+                return {"error": "차트 데이터를 JSON으로 변환할 수 없습니다."}
+        
+        # D3 데이터 별도 생성
+        try:
+            d3_data = chart_generator._prepare_d3_data(fig)
+            logger.info(f"D3 데이터 변환 성공")
+        except Exception as e:
+            logger.error(f"D3 데이터 변환 오류: {str(e)}")
+            d3_data = json.dumps({'error': 'D3 데이터 변환 실패'})
+        
+        # 결과 반환
         return {
-            'chart_json': chart_json,
-            'chart_type': chart_type,
-            'title': title
+            'chart_json': chart_data,
+            'd3_data': d3_data,
+            'config': json.dumps({
+                'editable': True,
+                'displayModeBar': True,
+                'responsive': True
+            })
         }
         
     except Exception as e:
-        logger.error(f"Plotly 차트 생성 중 오류: {str(e)}")
-        # 오류 발생 시 빈 차트 반환
-        fig = go.Figure()
-        fig.update_layout(
-            title=f"차트 생성 오류: {str(e)}",
-            annotations=[
-                dict(
-                    text="데이터를 시각화할 수 없습니다",
-                    showarrow=False,
-                    xref="paper",
-                    yref="paper",
-                    x=0.5,
-                    y=0.5
-                )
-            ]
-        )
-        return {
-            'chart_json': fig.to_json(),
-            'chart_type': 'error',
-            'error': str(e)
-        } 
+        logger.error(f"차트 생성 중 오류 발생: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return {"error": f"차트 생성 중 오류 발생: {str(e)}"} 

@@ -3,10 +3,21 @@ import axios from 'axios';
 import './index.css'; // App.tsx에 대한 CSS (기존 ExcelUploader.css 등)
 import ExcelUploader, { ChartData } from './components/ExcelUploader'; // 기존 파일 업로더
 import LoadingPage from './components/LoadingPage';
-import PlotlyChart from './components/PlotlyChart'; // Plotly 차트 컴포넌트 추가
+import PlotlyChart from './components/PlotlyChart'; // Plotly 차트 컴포넌트 
+import D3Chart from './components/D3Chart'; // D3.js 차트 컴포넌트 추가
 
 // App 상태 정의 (progress_view 상태 제거)
 type AppState = 'idle' | 'processing' | 'results' | 'error';
+
+// 차트 스타일 타입 정의
+interface ChartStyle {
+  fontFamily: string;
+  fontSize: number;
+  titleSize: number;
+  axisColor: string;
+  gridLines: boolean;
+  barOpacity: number;
+}
 
 // Plotly 차트 데이터 타입 정의
 interface PlotlyChartData {
@@ -14,19 +25,122 @@ interface PlotlyChartData {
   original_file_name: string;
   chart_type: string;
   chart_json: string;
+  d3_data?: string; // D3.js 데이터 추가
   columns: string[];
   numeric_columns: string[];
   rows_count: number;
+  custom_title?: string; // 사용자 정의 타이틀 추가
   error?: string;
 }
+
+// 파일명에서 확장자와 시트명 제거 함수 추가
+const getCleanFileName = (fileName: string): string => {
+  // 확장자 제거 (.xlsx, .csv 등)
+  let cleanName = fileName.replace(/\.(xlsx|xls|csv|txt)$/i, '');
+  // "- Sheet1" 같은 시트 이름 제거
+  cleanName = cleanName.replace(/\s*-\s*Sheet\d+$/i, '');
+  return cleanName;
+};
 
 function App() {
   const [appState, setAppState] = useState<AppState>('idle');
   const [chartData, setChartData] = useState<ChartData[] | null>(null);
   const [plotlyChartData, setPlotlyChartData] = useState<PlotlyChartData[] | null>(null);
-  const [useInteractive, setUseInteractive] = useState<boolean>(false);
+  const [useInteractive, setUseInteractive] = useState<boolean>(true); // 기본값을 true로 변경
   const [error, setError] = useState<string | null>(null);
   const [loadingMessage, setLoadingMessage] = useState<string>("데이터 분석 중...");
+  const [showStyleEditor, setShowStyleEditor] = useState<boolean>(false);
+  const [chartStyle, setChartStyle] = useState<ChartStyle>({
+    fontFamily: 'Pretendard, sans-serif',
+    fontSize: 12,
+    titleSize: 16,
+    axisColor: '#ffffff',
+    gridLines: false,
+    barOpacity: 0.9
+  });
+  
+  // 차트 타이틀 수정 처리
+  const handleTitleChange = useCallback((chartIndex: number, newTitle: string) => {
+    if (!plotlyChartData) return;
+    
+    const updatedChartData = [...plotlyChartData];
+    updatedChartData[chartIndex] = {
+      ...updatedChartData[chartIndex],
+      custom_title: newTitle
+    };
+    
+    setPlotlyChartData(updatedChartData);
+  }, [plotlyChartData]);
+  
+  // 차트 색상 수정 처리
+  const handleColorChange = useCallback(async (chartIndex: number, colorIndex: number, newColor: string) => {
+    if (!plotlyChartData) return;
+    
+    try {
+      const currentChart = plotlyChartData[chartIndex];
+      
+      // 현재 차트 데이터 파싱
+      const parsedChartData = JSON.parse(currentChart.chart_json);
+      
+      // 차트 색상 배열 업데이트
+      const colors = [];
+      
+      // 기존 데이터에서 색상 추출
+      if (parsedChartData && parsedChartData.data) {
+        for (let i = 0; i < parsedChartData.data.length; i++) {
+          if (i === colorIndex) {
+            // 변경된 색상 적용
+            colors.push(newColor);
+          } else if (parsedChartData.data[i].marker && parsedChartData.data[i].marker.color) {
+            // 기존 색상 유지
+            colors.push(parsedChartData.data[i].marker.color);
+          } else if (parsedChartData.data[i].line && parsedChartData.data[i].line.color) {
+            // 선 색상 유지
+            colors.push(parsedChartData.data[i].line.color);
+          } else {
+            // 기본 색상
+            colors.push(`#${Math.floor(Math.random() * 16777215).toString(16)}`);
+          }
+        }
+      }
+      
+      // 서버에 색상 업데이트 요청
+      const response = await axios.post('/api/visualize/update-chart-colors', {
+        data_frame: JSON.stringify(parsedChartData.dataframe || {}),
+        chart_context: {
+          chart_type: currentChart.chart_type,
+          x_column: currentChart.columns[0],
+          y_columns: currentChart.numeric_columns,
+          title: currentChart.custom_title || `${currentChart.original_file_name} - ${currentChart.sheet_name}`,
+          colors: colors
+        }
+      });
+      
+      // 업데이트된 차트 데이터로 상태 업데이트
+      const updatedChartData = [...plotlyChartData];
+      updatedChartData[chartIndex] = {
+        ...updatedChartData[chartIndex],
+        chart_json: response.data.chart_json,
+        d3_data: response.data.d3_data
+      };
+      
+      setPlotlyChartData(updatedChartData);
+      
+    } catch (err) {
+      console.error("차트 색상 업데이트 오류:", err);
+    }
+  }, [plotlyChartData]);
+
+  const handleReset = () => {
+    setAppState('idle');
+    setChartData(null);
+    setPlotlyChartData(null);
+    setError(null);
+  };
+
+  const toggleChartType = () => {
+    setUseInteractive(!useInteractive);
+  };
 
   const handleFileUpload = useCallback(async (file: File, sheetName?: string) => {
     setAppState('processing');
@@ -90,15 +204,75 @@ function App() {
     }
   }, [useInteractive]);
 
-  const handleReset = () => {
-    setAppState('idle');
-    setChartData(null);
-    setPlotlyChartData(null);
-    setError(null);
+  // PNG 다운로드 처리
+  const handleDownloadPNG = () => {
+    if (!plotlyChartData || plotlyChartData.length === 0) return;
+    
+    try {
+      // SVG 요소 가져오기
+      const svgElement = document.querySelector(".d3-chart-container svg");
+      if (!svgElement) {
+        console.error("SVG 요소를 찾을 수 없습니다.");
+        return;
+      }
+
+      // SVG를 캔버스로 변환
+      const svgData = new XMLSerializer().serializeToString(svgElement);
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        console.error("2D 컨텍스트를 가져올 수 없습니다.");
+        return;
+      }
+
+      // 캔버스 크기 설정
+      canvas.width = svgElement.clientWidth * 2;
+      canvas.height = svgElement.clientHeight * 2;
+      ctx.scale(2, 2); // 고해상도를 위한 스케일링
+
+      // 배경색 설정 (D3 차트의 배경과 일치)
+      ctx.fillStyle = "#1e1e2f";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // SVG를 이미지로 변환
+      const img = new Image();
+      const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, svgElement.clientWidth, svgElement.clientHeight);
+        URL.revokeObjectURL(url);
+
+        // 다운로드 링크 생성
+        const imgURL = canvas.toDataURL("image/png");
+        const link = document.createElement("a");
+        const currentData = plotlyChartData[0];
+        const filename = currentData.custom_title || `${currentData.original_file_name} - ${currentData.sheet_name}`;
+        link.download = `${filename || 'chart'}.png`;
+        link.href = imgURL;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+
+      img.src = url;
+    } catch (error) {
+      console.error("PNG 다운로드 오류:", error);
+      alert("PNG 다운로드 중 오류가 발생했습니다.");
+    }
   };
 
-  const toggleChartType = () => {
-    setUseInteractive(!useInteractive);
+  // 스타일 편집 토글 처리
+  const handleToggleStyleEditor = () => {
+    setShowStyleEditor(!showStyleEditor);
+  };
+
+  // 차트 스타일 변경 처리
+  const handleStyleChange = (key: keyof ChartStyle, value: any) => {
+    setChartStyle(prev => ({
+      ...prev,
+      [key]: value
+    }));
   };
 
   return (
@@ -129,12 +303,12 @@ function App() {
                   className="toggle-checkbox"
                 />
                 <span className="toggle-text">
-                  {useInteractive ? '인터랙티브 차트 (Plotly)' : '정적 차트 (Matplotlib)'}
+                  {useInteractive ? '인터랙티브 차트 (Plotly/D3.js)' : '정적 차트 (Matplotlib)'}
                 </span>
               </label>
               <div className="toggle-description">
                 {useInteractive ? 
-                  '인터랙티브 차트는 확대/축소, 데이터 탐색이 가능합니다.' : 
+                  '인터랙티브 차트는 확대/축소, 데이터 탐색, 시각화 옵션 변경이 가능합니다.' : 
                   '정적 차트는 기본적인 시각화와 AI 분석을 제공합니다.'}
               </div>
             </div>
@@ -160,21 +334,90 @@ function App() {
             <div className="plotly-results">
               {plotlyChartData.map((data, index) => (
                 <div key={index} className="chart-container">
-                  <h3>{data.original_file_name} - {data.sheet_name}</h3>
                   {data.error ? (
                     <p className="chart-error">{data.error}</p>
                   ) : (
                     <div className="interactive-chart-container">
-                      <PlotlyChart 
-                        chartData={data.chart_json} 
-                        title={`${data.original_file_name} - ${data.sheet_name}`}
+                      <D3Chart
+                        d3Data={data.d3_data || '{}'}
+                        title={data.custom_title || getCleanFileName(data.original_file_name)}
+                        onTitleChange={(newTitle) => handleTitleChange(index, newTitle)}
+                        onStyleEditRequest={handleToggleStyleEditor}
+                        style={chartStyle}
                       />
-                      
-                      <div className="chart-metadata">
-                        <p><strong>차트 유형:</strong> {data.chart_type}</p>
-                        <p><strong>데이터 크기:</strong> {data.rows_count}행 × {data.columns.length}열</p>
-                        <p><strong>숫자형 열:</strong> {data.numeric_columns.join(', ')}</p>
-                      </div>
+                      {showStyleEditor && (
+                        <div className="chart-style-editor">
+                          <h4>차트 스타일 편집</h4>
+                          <div className="style-option">
+                            <label>폰트</label>
+                            <select
+                              value={chartStyle.fontFamily}
+                              onChange={(e) => handleStyleChange('fontFamily', e.target.value)}
+                            >
+                              <option value="Pretendard, sans-serif">Pretendard</option>
+                              <option value="Arial, sans-serif">Arial</option>
+                              <option value="Helvetica, sans-serif">Helvetica</option>
+                              <option value="'Noto Sans KR', sans-serif">Noto Sans KR</option>
+                              <option value="'Malgun Gothic', sans-serif">맑은 고딕</option>
+                            </select>
+                          </div>
+                          
+                          <div className="style-option">
+                            <label>글자 크기</label>
+                            <input
+                              type="range"
+                              min="8"
+                              max="16"
+                              value={chartStyle.fontSize}
+                              onChange={(e) => handleStyleChange('fontSize', parseInt(e.target.value))}
+                            />
+                            <span>{chartStyle.fontSize}px</span>
+                          </div>
+                          
+                          <div className="style-option">
+                            <label>제목 크기</label>
+                            <input
+                              type="range"
+                              min="14"
+                              max="24"
+                              value={chartStyle.titleSize}
+                              onChange={(e) => handleStyleChange('titleSize', parseInt(e.target.value))}
+                            />
+                            <span>{chartStyle.titleSize}px</span>
+                          </div>
+                          
+                          <div className="style-option">
+                            <label>바 투명도</label>
+                            <input
+                              type="range"
+                              min="0.3"
+                              max="1"
+                              step="0.1"
+                              value={chartStyle.barOpacity}
+                              onChange={(e) => handleStyleChange('barOpacity', parseFloat(e.target.value))}
+                            />
+                            <span>{chartStyle.barOpacity}</span>
+                          </div>
+                          
+                          <div className="style-option">
+                            <label>그리드 라인</label>
+                            <input
+                              type="checkbox"
+                              checked={chartStyle.gridLines}
+                              onChange={(e) => handleStyleChange('gridLines', e.target.checked)}
+                            />
+                          </div>
+                          
+                          <div className="style-option">
+                            <label>축 색상</label>
+                            <input
+                              type="color"
+                              value={chartStyle.axisColor}
+                              onChange={(e) => handleStyleChange('axisColor', e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -240,7 +483,10 @@ function App() {
           )}
           
           <div className="action-buttons">
-            <button onClick={handleReset} className="reset-button">다시 분석하기</button>
+            <button onClick={handleToggleStyleEditor} className="style-edit-btn">
+              {showStyleEditor ? '스타일 편집 닫기' : '스타일 편집'}
+            </button>
+            <button onClick={handleDownloadPNG} className="download-png-btn">PNG 다운로드</button>
             <button onClick={handleReset} className="home-button">처음으로</button>
           </div>
         </div>

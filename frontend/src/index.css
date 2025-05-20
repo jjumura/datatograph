@@ -591,4 +591,174 @@ button:disabled,
 /* 기존 reset-button에 margin 제거 (이제 .action-buttons에서 관리) */
 .reset-button {
   margin: 0;
+}
+
+/* D3 차트 툴팁 스타일 */
+.d3-tooltip {
+  position: absolute;
+  background-color: rgba(40, 44, 52, 0.9);
+  color: white;
+  border-radius: 5px;
+  padding: 10px;
+  font-size: 12px;
+  pointer-events: none;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  min-width: 120px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.d3-tooltip strong {
+  font-size: 14px;
+  display: block;
+  margin-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 3px;
+}
+
+.d3-tooltip .value {
+  font-size: 18px;
+  font-weight: bold;
+  margin: 5px 0;
+}
+
+.d3-tooltip .series-name {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* 차트 스타일 편집기 스타일 */
+.chart-style-editor {
+  background-color: rgba(40, 44, 52, 0.9);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 15px;
+  margin-top: 15px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+.chart-style-editor h4 {
+  font-size: 16px;
+  color: var(--main-primary-color);
+  margin-bottom: 15px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 8px;
+}
+
+.style-option {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.style-option label {
+  min-width: 80px;
+  margin-right: 10px;
+  font-size: 14px;
+}
+
+.style-option input[type="range"],
+.style-option select {
+  flex-grow: 1;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 5px;
+  border-radius: 4px;
+}
+
+.style-option input[type="range"] {
+  height: 8px;
+}
+
+.style-option select {
+  height: 32px;
+  padding: 0 5px;
+}
+
+.style-option span {
+  margin-left: 10px;
+  min-width: 40px;
+  text-align: right;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.style-option input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-left: 0;
+}
+
+.style-option input[type="color"] {
+  width: 50px;
+  height: 30px;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.style-edit-btn {
+  background-color: #6c5ce7;
+  margin-right: 10px;
+  font-size: 13px;
+  padding: 8px 12px;
+}
+
+.style-edit-btn:hover {
+  background-color: #5541d7;
+}
+
+/* 툴팁 스타일 */
+.d3-tooltip {
+  position: absolute;
+  background-color: rgba(40, 44, 52, 0.95);
+  color: white;
+  border-radius: 5px;
+  padding: 10px;
+  font-size: 12px;
+  pointer-events: none;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  z-index: 10000;
+  min-width: 120px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.d3-tooltip strong {
+  font-size: 14px;
+  display: block;
+  margin-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  padding-bottom: 3px;
+}
+
+.d3-tooltip .value {
+  font-size: 18px;
+  font-weight: bold;
+  margin: 5px 0;
+}
+
+.d3-tooltip .series-name {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* 차트 액션 버튼 스타일 개선 */
+.chart-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+}
+
+.chart-action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.chart-action-buttons button {
+  padding: 8px 12px;
+  font-size: 14px;
 } 
