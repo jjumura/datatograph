@@ -12,7 +12,10 @@ app = FastAPI()
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://dtv-dpdps-projects.vercel.app"],
+    allow_origins=[
+        "https://dtv-dpdps-projects.vercel.app",  # 배포 프론트엔드
+        "http://localhost:3000",                  # 로컬 개발용 프론트엔드
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
