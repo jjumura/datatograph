@@ -13,8 +13,9 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://dtv-dpdps-projects.vercel.app",  # 배포 프론트엔드
-        "http://localhost:3000",                  # 로컬 개발용 프론트엔드
+        "https://dtv-git-main-dpdps-projects.vercel.app",  # 베셀 1
+        "https://dt-bly23w25q-dpdps-projects.vercel.app",  # 베셀 2
+        "http://localhost:3000",  # 개발용(로컬)
     ],
     allow_credentials=True,
     allow_methods=["*"],
