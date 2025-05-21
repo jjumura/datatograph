@@ -158,11 +158,12 @@ const D3Chart: React.FC<D3ChartProps> = ({ d3Data, title, onTitleChange, onToggl
 
       // D3 데이터 파싱
       const parsedData = typeof d3Data === 'string' ? JSON.parse(d3Data) : d3Data;
-      
-      // 차트 타입 확인
-      const chartType = parsedData.type || 'bar';
-      const layout = parsedData.layout || {};
-      const series = parsedData.series || [];
+      const series = parsedData.data || [];
+      const chartType = (series[0] && series[0].type) ? series[0].type : 'bar';
+
+      console.log('파싱된 데이터:', parsedData);
+      console.log('시리즈 데이터:', series);
+      console.log('차트 타입:', chartType);
 
       // 마진 및 차트 크기 설정
       const margin = { top: 40, right: 30, bottom: 60, left: 60 };
