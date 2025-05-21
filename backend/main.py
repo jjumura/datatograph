@@ -26,30 +26,31 @@ async def root():
 async def health_check():
     return {"status": "healthy"}
 
+# ---- sheet_name 안전 변환 함수 ----
+def get_actual_sheet_name(contents, sheet_name):
+    excel_file = pd.ExcelFile(io.BytesIO(contents))
+    sheet_names = excel_file.sheet_names
+    if sheet_name in [None, 0, "0"]:
+        return sheet_names[0]
+    elif sheet_name in sheet_names:
+        return sheet_name
+    else:
+        return sheet_names[0]
+# ---------------------------------
+
 # 엑셀 파일 분석 엔드포인트
 @app.post("/excel/analyze")
 async def analyze_excel(file: UploadFile = File(...), sheet_name: Optional[str] = Form("0")):
     try:
         contents = await file.read()
-        # sheet_name이 "0"이면 첫 번째 시트 사용
-        if sheet_name == "0":
-            df = pd.read_excel(io.BytesIO(contents))
-        else:
-            # sheet_name이 실제 시트명인지 확인
-            excel_file = pd.ExcelFile(io.BytesIO(contents))
-            if sheet_name in excel_file.sheet_names:
-                df = pd.read_excel(io.BytesIO(contents), sheet_name=sheet_name)
-            else:
-                # 시트명이 없으면 첫 번째 시트 사용
-                df = pd.read_excel(io.BytesIO(contents))
-                sheet_name = excel_file.sheet_names[0]
+        actual_sheet = get_actual_sheet_name(contents, sheet_name)
+        df = pd.read_excel(io.BytesIO(contents), sheet_name=actual_sheet)
         
-        # 데이터프레임 분석
         columns = df.columns.tolist()
         numeric_columns = df.select_dtypes(include=['number']).columns.tolist()
         
         return {
-            "sheet_name": sheet_name,
+            "sheet_name": actual_sheet,
             "original_file_name": file.filename,
             "columns": columns,
             "numeric_columns": numeric_columns,
@@ -65,25 +66,14 @@ async def analyze_excel(file: UploadFile = File(...), sheet_name: Optional[str] 
 async def read_excel(file: UploadFile = File(...), sheet_name: Optional[str] = Form("0")):
     try:
         contents = await file.read()
-        # sheet_name이 "0"이면 첫 번째 시트 사용
-        if sheet_name == "0":
-            df = pd.read_excel(io.BytesIO(contents))
-        else:
-            # sheet_name이 실제 시트명인지 확인
-            excel_file = pd.ExcelFile(io.BytesIO(contents))
-            if sheet_name in excel_file.sheet_names:
-                df = pd.read_excel(io.BytesIO(contents), sheet_name=sheet_name)
-            else:
-                # 시트명이 없으면 첫 번째 시트 사용
-                df = pd.read_excel(io.BytesIO(contents))
-                sheet_name = excel_file.sheet_names[0]
+        actual_sheet = get_actual_sheet_name(contents, sheet_name)
+        df = pd.read_excel(io.BytesIO(contents), sheet_name=actual_sheet)
         
-        # 데이터프레임을 JSON으로 변환
         data = df.values.tolist()
         columns = df.columns.tolist()
         
         return {
-            "sheet_name": sheet_name,
+            "sheet_name": actual_sheet,
             "original_file_name": file.filename,
             "columns": columns,
             "data": data
@@ -98,24 +88,13 @@ async def read_excel(file: UploadFile = File(...), sheet_name: Optional[str] = F
 async def split_excel_tables(file: UploadFile = File(...), sheet_name: Optional[str] = Form("0")):
     try:
         contents = await file.read()
-        # sheet_name이 "0"이면 첫 번째 시트 사용
-        if sheet_name == "0":
-            df = pd.read_excel(io.BytesIO(contents))
-        else:
-            # sheet_name이 실제 시트명인지 확인
-            excel_file = pd.ExcelFile(io.BytesIO(contents))
-            if sheet_name in excel_file.sheet_names:
-                df = pd.read_excel(io.BytesIO(contents), sheet_name=sheet_name)
-            else:
-                # 시트명이 없으면 첫 번째 시트 사용
-                df = pd.read_excel(io.BytesIO(contents))
-                sheet_name = excel_file.sheet_names[0]
+        actual_sheet = get_actual_sheet_name(contents, sheet_name)
+        df = pd.read_excel(io.BytesIO(contents), sheet_name=actual_sheet)
         
-        # 간단한 예시: 하나의 테이블만 반환
         data = df.values.tolist()
         
         return {
-            "sheet_name": sheet_name,
+            "sheet_name": actual_sheet,
             "original_file_name": file.filename,
             "tables": [
                 {
@@ -135,33 +114,18 @@ async def split_excel_tables(file: UploadFile = File(...), sheet_name: Optional[
 async def visualize_excel_plotly(file: UploadFile = File(...), sheet_name: Optional[str] = Form(None)):
     try:
         contents = await file.read()
-        # sheet_name이 None이거나 "0"이면 첫 번째 시트 사용
-        if sheet_name is None or sheet_name == "0":
-            df = pd.read_excel(io.BytesIO(contents))
-            excel_file = pd.ExcelFile(io.BytesIO(contents))
-            sheet_name = excel_file.sheet_names[0]
-        else:
-            # sheet_name이 실제 시트명인지 확인
-            excel_file = pd.ExcelFile(io.BytesIO(contents))
-            if sheet_name in excel_file.sheet_names:
-                df = pd.read_excel(io.BytesIO(contents), sheet_name=sheet_name)
-            else:
-                # 시트명이 없으면 첫 번째 시트 사용
-                df = pd.read_excel(io.BytesIO(contents))
-                sheet_name = excel_file.sheet_names[0]
+        actual_sheet = get_actual_sheet_name(contents, sheet_name)
+        df = pd.read_excel(io.BytesIO(contents), sheet_name=actual_sheet)
         
-        # 데이터프레임에서 적절한 차트 데이터 생성
         numeric_columns = df.select_dtypes(include=['number']).columns.tolist()
         if not numeric_columns:
             return [{"error": "수치형 데이터가 없습니다."}]
         
         charts = []
         for i, num_col in enumerate(numeric_columns[:3]):  # 최대 3개의 차트만 생성
-            # X축은 첫 번째 열 또는 인덱스 사용
             x_column = df.columns[0] if len(df.columns) > 0 else df.index.name or "Index"
             x_data = df.iloc[:, 0].tolist() if len(df.columns) > 0 else list(range(len(df)))
             
-            # 기본적인 막대 차트 데이터
             chart_data = {
                 "data": [
                     {
@@ -181,7 +145,7 @@ async def visualize_excel_plotly(file: UploadFile = File(...), sheet_name: Optio
             }
             
             charts.append({
-                "sheet_name": sheet_name,
+                "sheet_name": actual_sheet,
                 "original_file_name": file.filename,
                 "chart_type": "bar",
                 "chart_json": json.dumps(chart_data),
@@ -204,4 +168,4 @@ async def visualize_excel_plotly(file: UploadFile = File(...), sheet_name: Optio
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port) 
+    uvicorn.run(app, host="0.0.0.0", port=port)
