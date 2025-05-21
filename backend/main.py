@@ -112,9 +112,9 @@ async def split_excel_tables(file: UploadFile = File(...), sheet_name: Optional[
         traceback.print_exc()
         return {"error": f"Excel 테이블 분할 중 오류 발생: {str(e)}"}
 
-# Plotly 시각화 엔드포인트
-@app.post("/api/visualize/plotly/excel")
-async def visualize_excel_plotly(file: UploadFile = File(...), sheet_name: Optional[str] = Form(None)):
+# D3 시각화 엔드포인트
+@app.post("/api/visualize/d3/excel")
+async def visualize_excel_d3(file: UploadFile = File(...), sheet_name: Optional[str] = Form(None)):
     try:
         contents = await file.read()
         actual_sheet = get_actual_sheet_name(contents, sheet_name)
@@ -151,7 +151,6 @@ async def visualize_excel_plotly(file: UploadFile = File(...), sheet_name: Optio
                 "sheet_name": actual_sheet,
                 "original_file_name": file.filename,
                 "chart_type": "bar",
-                "chart_json": json.dumps(chart_data),
                 "d3_data": json.dumps(chart_data),
                 "columns": [x_column],
                 "numeric_columns": [num_col],

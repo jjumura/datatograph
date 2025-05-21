@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
-import './PlotlyChart.css'; // 기존 차트 스타일 재사용
+import './D3Chart.css'; // 기존 차트 스타일 재사용
 
 interface ChartStyle {
   fontFamily?: string;

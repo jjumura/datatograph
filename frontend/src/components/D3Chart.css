@@ -7,6 +7,7 @@
   overflow: hidden;
   margin-bottom: 20px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  padding: 20px;
 }
 
 /* 차트 뷰 컨테이너 */
@@ -164,4 +165,67 @@
   .color-edit-btn {
     width: 100%;
   }
+}
+
+.d3-chart-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 20px;
+  cursor: pointer;
+}
+
+.d3-chart-title:hover {
+  color: #646cff;
+}
+
+.d3-chart-title input {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  width: 100%;
+  text-align: center;
+}
+
+.d3-chart-title input:focus {
+  outline: none;
+  border-bottom: 2px solid #646cff;
+}
+
+.d3-chart-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+}
+
+.d3-chart-error {
+  color: #ff6b6b;
+  text-align: center;
+  padding: 20px;
+}
+
+.d3-chart-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.d3-chart-action-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.d3-chart-action-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 } 
