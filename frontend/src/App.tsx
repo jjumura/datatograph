@@ -3,7 +3,6 @@ import axios from 'axios';
 import './index.css'; // App.tsx에 대한 CSS (기존 ExcelUploader.css 등)
 import ExcelUploader, { ChartData } from './components/ExcelUploader'; // 기존 파일 업로더
 import LoadingPage from './components/LoadingPage';
-import PlotlyChart from './components/PlotlyChart'; // Plotly 차트 컴포넌트 
 import D3Chart from './components/D3Chart'; // D3.js 차트 컴포넌트 추가
 
 // Cloud Run에 배포된 백엔드 서버 URL
@@ -22,17 +21,16 @@ interface ChartStyle {
   barOpacity: number;
 }
 
-// Plotly 차트 데이터 타입 정의
-interface PlotlyChartData {
+// D3 차트 데이터 타입 정의
+interface D3ChartData {
   sheet_name: string;
   original_file_name: string;
   chart_type: string;
-  chart_json: string;
-  d3_data?: string; // D3.js 데이터 추가
+  d3_data: string;
   columns: string[];
   numeric_columns: string[];
   rows_count: number;
-  custom_title?: string; // 사용자 정의 타이틀 추가
+  custom_title?: string;
   error?: string;
 }
 
@@ -48,8 +46,7 @@ const getCleanFileName = (fileName: string): string => {
 function App() {
   const [appState, setAppState] = useState<AppState>('idle');
   const [chartData, setChartData] = useState<ChartData[] | null>(null);
-  const [plotlyChartData, setPlotlyChartData] = useState<PlotlyChartData[] | null>(null);
-  const [useInteractive, setUseInteractive] = useState<boolean>(true); // 항상 인터랙티브 차트 사용
+  const [d3ChartData, setD3ChartData] = useState<D3ChartData[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loadingMessage, setLoadingMessage] = useState<string>("데이터 분석 중...");
   const [showStyleEditor, setShowStyleEditor] = useState<boolean>(false);
@@ -64,85 +61,22 @@ function App() {
   
   // 차트 타이틀 수정 처리
   const handleTitleChange = useCallback((chartIndex: number, newTitle: string) => {
-    if (!plotlyChartData) return;
+    if (!d3ChartData) return;
     
-    const updatedChartData = [...plotlyChartData];
+    const updatedChartData = [...d3ChartData];
     updatedChartData[chartIndex] = {
       ...updatedChartData[chartIndex],
       custom_title: newTitle
     };
     
-    setPlotlyChartData(updatedChartData);
-  }, [plotlyChartData]);
+    setD3ChartData(updatedChartData);
+  }, [d3ChartData]);
   
-  // 차트 색상 수정 처리
-  const handleColorChange = useCallback(async (chartIndex: number, colorIndex: number, newColor: string) => {
-    if (!plotlyChartData) return;
-    
-    try {
-      const currentChart = plotlyChartData[chartIndex];
-      
-      // 현재 차트 데이터 파싱
-      const parsedChartData = JSON.parse(currentChart.chart_json);
-      
-      // 차트 색상 배열 업데이트
-      const colors = [];
-      
-      // 기존 데이터에서 색상 추출
-      if (parsedChartData && parsedChartData.data) {
-        for (let i = 0; i < parsedChartData.data.length; i++) {
-          if (i === colorIndex) {
-            // 변경된 색상 적용
-            colors.push(newColor);
-          } else if (parsedChartData.data[i].marker && parsedChartData.data[i].marker.color) {
-            // 기존 색상 유지
-            colors.push(parsedChartData.data[i].marker.color);
-          } else if (parsedChartData.data[i].line && parsedChartData.data[i].line.color) {
-            // 선 색상 유지
-            colors.push(parsedChartData.data[i].line.color);
-          } else {
-            // 기본 색상
-            colors.push(`#${Math.floor(Math.random() * 16777215).toString(16)}`);
-          }
-        }
-      }
-      
-      // 서버에 색상 업데이트 요청
-      const response = await axios.post(`${API_URL}/api/visualize/update-chart-colors`, {
-        data_frame: JSON.stringify(parsedChartData.dataframe || {}),
-        chart_context: {
-          chart_type: currentChart.chart_type,
-          x_column: currentChart.columns[0],
-          y_columns: currentChart.numeric_columns,
-          title: currentChart.custom_title || `${currentChart.original_file_name} - ${currentChart.sheet_name}`,
-          colors: colors
-        }
-      });
-      
-      // 업데이트된 차트 데이터로 상태 업데이트
-      const updatedChartData = [...plotlyChartData];
-      updatedChartData[chartIndex] = {
-        ...updatedChartData[chartIndex],
-        chart_json: response.data.chart_json,
-        d3_data: response.data.d3_data
-      };
-      
-      setPlotlyChartData(updatedChartData);
-      
-    } catch (err) {
-      console.error("차트 색상 업데이트 오류:", err);
-    }
-  }, [plotlyChartData]);
-
   const handleReset = () => {
     setAppState('idle');
     setChartData(null);
-    setPlotlyChartData(null);
+    setD3ChartData(null);
     setError(null);
-  };
-
-  const toggleChartType = () => {
-    // 더 이상 상태를 변경하지 않음
   };
 
   const handleFileUpload = useCallback(async (file: File, sheetName?: string) => {
@@ -157,15 +91,14 @@ function App() {
     try {
       setLoadingMessage("데이터 처리 및 차트 생성 중...");
       
-      // 항상 인터랙티브 차트 요청
-      const response = await axios.post<PlotlyChartData[]>(`${API_URL}/api/visualize/plotly/excel`, formData, {
+      const response = await axios.post<D3ChartData[]>(`${API_URL}/api/visualize/d3/excel`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
       
-      setLoadingMessage("인터랙티브 차트 생성 완료!");
-      setPlotlyChartData(response.data);
+      setLoadingMessage("차트 생성 완료!");
+      setD3ChartData(response.data);
       setChartData(null);
       
       setAppState('results');
@@ -183,14 +116,14 @@ function App() {
       }
       setError(errorMessage);
       setChartData(null);
-      setPlotlyChartData(null);
+      setD3ChartData(null);
       setAppState('error');
     }
-  }, []);  // useInteractive 의존성 제거
+  }, []);
 
   // PNG 다운로드 처리
   const handleDownloadPNG = () => {
-    if (!plotlyChartData || plotlyChartData.length === 0) return;
+    if (!d3ChartData || d3ChartData.length === 0) return;
     
     try {
       // SVG 요소 가져오기
@@ -230,7 +163,7 @@ function App() {
         // 다운로드 링크 생성
         const imgURL = canvas.toDataURL("image/png");
         const link = document.createElement("a");
-        const currentData = plotlyChartData[0];
+        const currentData = d3ChartData[0];
         const filename = currentData.custom_title || `${currentData.original_file_name} - ${currentData.sheet_name}`;
         link.download = `${filename || 'chart'}.png`;
         link.href = imgURL;
@@ -295,17 +228,17 @@ function App() {
         <div className="results-section">
           <h2>분석 결과</h2>
           
-          {/* 인터랙티브 Plotly 차트 결과 */}
-          {plotlyChartData && (
-            <div className="plotly-results">
-              {plotlyChartData.map((data, index) => (
+          {/* 인터랙티브 D3 차트 결과 */}
+          {d3ChartData && (
+            <div className="d3-results">
+              {d3ChartData.map((data, index) => (
                 <div key={index} className="chart-container">
                   {data.error ? (
                     <p className="chart-error">{data.error}</p>
                   ) : (
                     <div className="interactive-chart-container">
                       <D3Chart
-                        d3Data={data.d3_data || '{}'}
+                        d3Data={data.d3_data}
                         title={data.custom_title || getCleanFileName(data.original_file_name)}
                         onTitleChange={(newTitle) => handleTitleChange(index, newTitle)}
                         onStyleEditRequest={handleToggleStyleEditor}
@@ -385,63 +318,6 @@ function App() {
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-          
-          {/* 기존 정적 차트 결과 */}
-          {chartData && (
-            <div className="static-chart-results">
-              {chartData.map((data, index) => (
-                <div key={index} className="chart-container">
-                  <h3>{data.original_file_name} - {data.sheet_name}</h3>
-                  {data.gemini_suggestion && (
-                    <div className="gemini-recommendation">
-                      <p><strong>AI 분석 요약:</strong> {data.gemini_suggestion.data_characteristics || data.gemini_suggestion.request_summary}</p>
-                      {data.gemini_suggestion.primary_chart_suggestion && (
-                        <p>
-                          <strong>추천 차트:</strong> {data.gemini_suggestion.primary_chart_suggestion.reason} 
-                          (유형: {data.gemini_suggestion.primary_chart_suggestion.chart_type})
-                        </p>
-                      )}
-                    </div>
-                  )}
-                  {data.chart_base64 ? (
-                    <div className="chart-display">
-                      <img src={`data:image/png;base64,${data.chart_base64}`} alt={`${data.sheet_name} 차트`} className="chart-image" />
-                      {data.chart_svg_path && (
-                        <div className="chart-actions">
-                          <button 
-                            className="svg-download-btn"
-                            onClick={() => {
-                              if (data.chart_svg_path) {
-                                // SVG 파일 다운로드 처리
-                                axios.get(`/api/visualize/download/${data.chart_svg_path}`, { responseType: 'blob' })
-                                  .then(response => {
-                                    const url = window.URL.createObjectURL(new Blob([response.data]));
-                                    const link = document.createElement('a');
-                                    link.href = url;
-                                    link.setAttribute('download', `${data.sheet_name.replace(/[^a-zA-Z0-9가-힣]/g, '_')}.svg`);
-                                    document.body.appendChild(link);
-                                    link.click();
-                                    window.URL.revokeObjectURL(url);
-                                    document.body.removeChild(link);
-                                  })
-                                  .catch(error => {
-                                    console.error('SVG 다운로드 오류:', error);
-                                  });
-                              }
-                            }}
-                          >
-                            SVG 다운로드
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="chart-error">차트 생성에 실패했습니다.</p>
                   )}
                 </div>
               ))}

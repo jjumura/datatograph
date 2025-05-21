@@ -686,21 +686,6 @@ const D3Chart: React.FC<D3ChartProps> = ({ d3Data, title, onTitleChange, onToggl
             className="d3-chart-container"
             ref={d3Container}
           ></div>
-
-          {!isLoading && (
-            <div className="chart-actions">
-              <div className="chart-action-buttons">
-                {onToggleD3View && (
-                  <button
-                    className="toggle-view-btn"
-                    onClick={onToggleD3View}
-                  >
-                    Plotly 보기
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
           
           {showStyleEditor && (
             <div className="chart-style-editor">
