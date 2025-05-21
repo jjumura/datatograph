@@ -31,7 +31,18 @@ async def health_check():
 async def analyze_excel(file: UploadFile = File(...), sheet_name: Optional[str] = Form("0")):
     try:
         contents = await file.read()
-        df = pd.read_excel(io.BytesIO(contents), sheet_name=sheet_name)
+        # sheet_name이 "0"이면 첫 번째 시트 사용
+        if sheet_name == "0":
+            df = pd.read_excel(io.BytesIO(contents))
+        else:
+            # sheet_name이 실제 시트명인지 확인
+            excel_file = pd.ExcelFile(io.BytesIO(contents))
+            if sheet_name in excel_file.sheet_names:
+                df = pd.read_excel(io.BytesIO(contents), sheet_name=sheet_name)
+            else:
+                # 시트명이 없으면 첫 번째 시트 사용
+                df = pd.read_excel(io.BytesIO(contents))
+                sheet_name = excel_file.sheet_names[0]
         
         # 데이터프레임 분석
         columns = df.columns.tolist()
@@ -54,7 +65,18 @@ async def analyze_excel(file: UploadFile = File(...), sheet_name: Optional[str] 
 async def read_excel(file: UploadFile = File(...), sheet_name: Optional[str] = Form("0")):
     try:
         contents = await file.read()
-        df = pd.read_excel(io.BytesIO(contents), sheet_name=sheet_name)
+        # sheet_name이 "0"이면 첫 번째 시트 사용
+        if sheet_name == "0":
+            df = pd.read_excel(io.BytesIO(contents))
+        else:
+            # sheet_name이 실제 시트명인지 확인
+            excel_file = pd.ExcelFile(io.BytesIO(contents))
+            if sheet_name in excel_file.sheet_names:
+                df = pd.read_excel(io.BytesIO(contents), sheet_name=sheet_name)
+            else:
+                # 시트명이 없으면 첫 번째 시트 사용
+                df = pd.read_excel(io.BytesIO(contents))
+                sheet_name = excel_file.sheet_names[0]
         
         # 데이터프레임을 JSON으로 변환
         data = df.values.tolist()
@@ -76,7 +98,18 @@ async def read_excel(file: UploadFile = File(...), sheet_name: Optional[str] = F
 async def split_excel_tables(file: UploadFile = File(...), sheet_name: Optional[str] = Form("0")):
     try:
         contents = await file.read()
-        df = pd.read_excel(io.BytesIO(contents), sheet_name=sheet_name)
+        # sheet_name이 "0"이면 첫 번째 시트 사용
+        if sheet_name == "0":
+            df = pd.read_excel(io.BytesIO(contents))
+        else:
+            # sheet_name이 실제 시트명인지 확인
+            excel_file = pd.ExcelFile(io.BytesIO(contents))
+            if sheet_name in excel_file.sheet_names:
+                df = pd.read_excel(io.BytesIO(contents), sheet_name=sheet_name)
+            else:
+                # 시트명이 없으면 첫 번째 시트 사용
+                df = pd.read_excel(io.BytesIO(contents))
+                sheet_name = excel_file.sheet_names[0]
         
         # 간단한 예시: 하나의 테이블만 반환
         data = df.values.tolist()
@@ -102,10 +135,20 @@ async def split_excel_tables(file: UploadFile = File(...), sheet_name: Optional[
 async def visualize_excel_plotly(file: UploadFile = File(...), sheet_name: Optional[str] = Form(None)):
     try:
         contents = await file.read()
-        if sheet_name is None:
-            sheet_name = "0"
-            
-        df = pd.read_excel(io.BytesIO(contents), sheet_name=sheet_name)
+        # sheet_name이 None이거나 "0"이면 첫 번째 시트 사용
+        if sheet_name is None or sheet_name == "0":
+            df = pd.read_excel(io.BytesIO(contents))
+            excel_file = pd.ExcelFile(io.BytesIO(contents))
+            sheet_name = excel_file.sheet_names[0]
+        else:
+            # sheet_name이 실제 시트명인지 확인
+            excel_file = pd.ExcelFile(io.BytesIO(contents))
+            if sheet_name in excel_file.sheet_names:
+                df = pd.read_excel(io.BytesIO(contents), sheet_name=sheet_name)
+            else:
+                # 시트명이 없으면 첫 번째 시트 사용
+                df = pd.read_excel(io.BytesIO(contents))
+                sheet_name = excel_file.sheet_names[0]
         
         # 데이터프레임에서 적절한 차트 데이터 생성
         numeric_columns = df.select_dtypes(include=['number']).columns.tolist()
