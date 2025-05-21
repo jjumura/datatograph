@@ -5,13 +5,14 @@ import json
 import pandas as pd
 import io
 import traceback
+import os
 
 app = FastAPI()
 
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 또는 ["https://dtv-dpdps-projects.vercel.app"]
+    allow_origins=["https://dtv-dpdps-projects.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -159,4 +160,5 @@ async def visualize_excel_plotly(file: UploadFile = File(...), sheet_name: Optio
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port) 
