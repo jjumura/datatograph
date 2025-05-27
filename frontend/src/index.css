@@ -1,3 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- ↓ 기존에 쓰던 전역 CSS가 있으면 이 아래에 그대로 두세요 ↓ --- */
+
 :root {
   font-family: 'Pretendard', Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
